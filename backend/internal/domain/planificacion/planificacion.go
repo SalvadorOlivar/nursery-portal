@@ -23,9 +23,11 @@ func (e Estado) IsValid() bool {
 	return false
 }
 
+const DiasSemana = 7
+
 type Planificacion struct {
 	ID        string
-	Mes       int
+	Semana    int
 	Anio      int
 	Nombre    string
 	Estado    Estado
@@ -34,14 +36,14 @@ type Planificacion struct {
 }
 
 type NewPlanificacionParams struct {
-	Mes    int
+	Semana int
 	Anio   int
 	Nombre string
 }
 
 func NewPlanificacion(params NewPlanificacionParams) (*Planificacion, error) {
-	if params.Mes < 1 || params.Mes > 12 {
-		return nil, fmt.Errorf("mes must be between 1 and 12")
+	if params.Semana < 1 || params.Semana > 53 {
+		return nil, fmt.Errorf("semana must be between 1 and 53")
 	}
 	if params.Anio < 2020 || params.Anio > 2100 {
 		return nil, fmt.Errorf("anio must be between 2020 and 2100")
@@ -53,7 +55,7 @@ func NewPlanificacion(params NewPlanificacionParams) (*Planificacion, error) {
 	now := time.Now().UTC()
 	return &Planificacion{
 		ID:        uuid.New().String(),
-		Mes:       params.Mes,
+		Semana:    params.Semana,
 		Anio:      params.Anio,
 		Nombre:    params.Nombre,
 		Estado:    EstadoBorrador,
@@ -80,25 +82,6 @@ func (p *Planificacion) Cerrar() error {
 	return nil
 }
 
-func (p *Planificacion) DiasDelMes() int {
-	return daysInMonth(p.Mes, p.Anio)
-}
-
-func daysInMonth(mes, anio int) int {
-	switch mes {
-	case 1, 3, 5, 7, 8, 10, 12:
-		return 31
-	case 4, 6, 9, 11:
-		return 30
-	case 2:
-		if isLeapYear(anio) {
-			return 29
-		}
-		return 28
-	}
-	return 30
-}
-
-func isLeapYear(anio int) bool {
-	return anio%4 == 0 && (anio%100 != 0 || anio%400 == 0)
+func (p *Planificacion) Dias() int {
+	return DiasSemana
 }

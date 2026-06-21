@@ -20,3 +20,9 @@ func NewWorkPattern(workDays, restDays int) (WorkPattern, error) {
 func DefaultWorkPattern() WorkPattern {
 	return WorkPattern{WorkDays: 4, RestDays: 1}
 }
+
+func (wp WorkPattern) IsRestDay(diaDelAnio int) bool {
+	cycleLength := wp.WorkDays + wp.RestDays
+	positionInCycle := (diaDelAnio - 1) % cycleLength
+	return positionInCycle >= wp.WorkDays
+}

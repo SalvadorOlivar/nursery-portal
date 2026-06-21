@@ -13,15 +13,15 @@ type GetDotacionQuery struct {
 }
 
 type GetDotacionHandler struct {
-	dotacionRepo ports.DotacionRepository
+	dotRepo ports.DotacionRepository
 }
 
-func NewGetDotacionHandler(dotacionRepo ports.DotacionRepository) *GetDotacionHandler {
-	return &GetDotacionHandler{dotacionRepo: dotacionRepo}
+func NewGetDotacionHandler(dotRepo ports.DotacionRepository) *GetDotacionHandler {
+	return &GetDotacionHandler{dotRepo: dotRepo}
 }
 
 func (h *GetDotacionHandler) Handle(ctx context.Context, query GetDotacionQuery) ([]planificacion.DotacionItem, error) {
-	items, err := h.dotacionRepo.GetDotacion(ctx, query.PlanificacionID)
+	items, err := h.dotRepo.GetDotacion(ctx, query.PlanificacionID)
 	if err != nil {
 		return nil, err
 	}

@@ -10,7 +10,7 @@ import (
 type CreateTurnoCommand struct {
 	PlanificacionID string
 	EmpleadoID      string
-	Dia             int
+	DiaSemana       int
 	Tipo            string
 	Sector          string
 }
@@ -27,7 +27,7 @@ func (h *CreateTurnoHandler) Handle(ctx context.Context, cmd CreateTurnoCommand)
 	t, err := turno.NewTurno(turno.NewTurnoParams{
 		PlanificacionID: cmd.PlanificacionID,
 		EmpleadoID:      cmd.EmpleadoID,
-		Dia:             cmd.Dia,
+		DiaSemana:       cmd.DiaSemana,
 		Tipo:            turno.TipoTurno(cmd.Tipo),
 		Sector:          cmd.Sector,
 	})

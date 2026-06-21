@@ -25,7 +25,7 @@ func NewPlanificacionHandler(svc *services.PlanificacionService, employeeSvc *se
 
 func (h *PlanificacionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Mes    int    `json:"mes"`
+		Semana int    `json:"semana"`
 		Anio   int    `json:"anio"`
 		Nombre string `json:"nombre"`
 	}
@@ -35,7 +35,7 @@ func (h *PlanificacionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	p, err := h.svc.Create(r.Context(), cmdplanif.CreatePlanificacionCommand{
-		Mes:    req.Mes,
+		Semana: req.Semana,
 		Anio:   req.Anio,
 		Nombre: req.Nombre,
 	})
@@ -136,7 +136,7 @@ func (h *PlanificacionHandler) CreateTurno(w http.ResponseWriter, r *http.Reques
 
 	var req struct {
 		EmpleadoID string `json:"empleado_id"`
-		Dia        int    `json:"dia"`
+		DiaSemana  int    `json:"dia_semana"`
 		Tipo       string `json:"tipo"`
 		Sector     string `json:"sector"`
 	}
@@ -148,7 +148,7 @@ func (h *PlanificacionHandler) CreateTurno(w http.ResponseWriter, r *http.Reques
 	t, err := h.svc.CreateTurno(r.Context(), cmdturno.CreateTurnoCommand{
 		PlanificacionID: planificacionID,
 		EmpleadoID:      req.EmpleadoID,
-		Dia:             req.Dia,
+		DiaSemana:       req.DiaSemana,
 		Tipo:            req.Tipo,
 		Sector:          req.Sector,
 	})
@@ -181,6 +181,22 @@ func (h *PlanificacionHandler) GetStaffingRequirements(w http.ResponseWriter, r 
 	items := make([]dotacionItemResponse, len(dotacion))
 	for i, d := range dotacion {
 		items[i] = toDotacionItemResponse(d)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"data": items})
+}
+
+func (h *PlanificacionHandler) GetPlanLeaves(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	leaves, err := h.svc.GetPlanLeaves(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "planificacion not found")
+		return
+	}
+
+	items := make([]leaveRequestResponse, len(leaves))
+	for i, lr := range leaves {
+		items[i] = toLeaveRequestResponse(lr)
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{"data": items})
@@ -258,7 +274,7 @@ func (h *PlanificacionHandler) UpdateDotacion(w http.ResponseWriter, r *http.Req
 
 type planificacionResponse struct {
 	ID        string `json:"id"`
-	Mes       int    `json:"mes"`
+	Semana    int    `json:"semana"`
 	Anio      int    `json:"anio"`
 	Nombre    string `json:"nombre"`
 	Estado    string `json:"estado"`
@@ -271,7 +287,7 @@ type turnoResponse struct {
 	ID              string `json:"id"`
 	PlanificacionID string `json:"planificacion_id"`
 	EmpleadoID      string `json:"empleado_id"`
-	Dia             int    `json:"dia"`
+	DiaSemana       int    `json:"dia_semana"`
 	Tipo            string `json:"tipo"`
 	Sector          string `json:"sector"`
 	CreatedAt       string `json:"created_at"`
@@ -287,11 +303,11 @@ type planificacionDetailResponse struct {
 func toPlanificacionResponse(p *planificacion.Planificacion) planificacionResponse {
 	return planificacionResponse{
 		ID:        p.ID,
-		Mes:       p.Mes,
+		Semana:    p.Semana,
 		Anio:      p.Anio,
 		Nombre:    p.Nombre,
 		Estado:    string(p.Estado),
-		Dias:      p.DiasDelMes(),
+		Dias:      p.Dias(),
 		CreatedAt: p.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt: p.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
@@ -302,7 +318,7 @@ func toTurnoResponse(t *turno.Turno) turnoResponse {
 		ID:              t.ID,
 		PlanificacionID: t.PlanificacionID,
 		EmpleadoID:      t.EmpleadoID,
-		Dia:             t.Dia,
+		DiaSemana:       t.DiaSemana,
 		Tipo:            string(t.Tipo),
 		Sector:          t.Sector,
 		CreatedAt:       t.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),

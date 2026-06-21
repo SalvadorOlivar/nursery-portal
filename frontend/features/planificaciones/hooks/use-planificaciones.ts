@@ -111,6 +111,14 @@ export function useStaffingRequirements(id: string) {
   })
 }
 
+export function usePlanLeaves(id: string) {
+  return useQuery({
+    queryKey: [...PLANIFICACIONES_KEY, id, 'leaves'],
+    queryFn: () => planificacionesApi.getLeaves(id),
+    enabled: !!id,
+  })
+}
+
 export function useSectores(id: string) {
   return useQuery({
     queryKey: [...PLANIFICACIONES_KEY, id, 'sectores'],

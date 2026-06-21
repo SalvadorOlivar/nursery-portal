@@ -13,13 +13,13 @@ type UpdateSectoresCommand struct {
 
 type UpdateSectoresHandler struct {
 	planifRepo ports.PlanificacionRepository
-	dotacionRepo ports.DotacionRepository
+	sectorRepo ports.SectorRepository
 }
 
-func NewUpdateSectoresHandler(planifRepo ports.PlanificacionRepository, dotacionRepo ports.DotacionRepository) *UpdateSectoresHandler {
+func NewUpdateSectoresHandler(planifRepo ports.PlanificacionRepository, sectorRepo ports.SectorRepository) *UpdateSectoresHandler {
 	return &UpdateSectoresHandler{
-		planifRepo:   planifRepo,
-		dotacionRepo: dotacionRepo,
+		planifRepo: planifRepo,
+		sectorRepo: sectorRepo,
 	}
 }
 
@@ -27,5 +27,5 @@ func (h *UpdateSectoresHandler) Handle(ctx context.Context, cmd UpdateSectoresCo
 	if _, err := h.planifRepo.FindByID(ctx, cmd.PlanificacionID); err != nil {
 		return err
 	}
-	return h.dotacionRepo.SaveSectores(ctx, cmd.PlanificacionID, cmd.Sectores)
+	return h.sectorRepo.SaveSectores(ctx, cmd.PlanificacionID, cmd.Sectores)
 }

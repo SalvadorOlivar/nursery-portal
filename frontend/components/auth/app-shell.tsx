@@ -61,6 +61,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 Empleados
               </Link>
             )}
+            <Link href="/intercambio" className="hover:text-primary transition-colors">
+              Intercambios
+            </Link>
+            <Link href="/leave-requests" className="hover:text-primary transition-colors">
+              Licencias
+            </Link>
             <Link href="/planificaciones" className="hover:text-primary transition-colors">
               Planificaciones
             </Link>

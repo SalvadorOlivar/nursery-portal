@@ -20,14 +20,14 @@ type DotacionItemInput struct {
 }
 
 type UpdateDotacionHandler struct {
-	planifRepo   ports.PlanificacionRepository
-	dotacionRepo ports.DotacionRepository
+	planifRepo ports.PlanificacionRepository
+	dotRepo    ports.DotacionRepository
 }
 
-func NewUpdateDotacionHandler(planifRepo ports.PlanificacionRepository, dotacionRepo ports.DotacionRepository) *UpdateDotacionHandler {
+func NewUpdateDotacionHandler(planifRepo ports.PlanificacionRepository, dotRepo ports.DotacionRepository) *UpdateDotacionHandler {
 	return &UpdateDotacionHandler{
-		planifRepo:   planifRepo,
-		dotacionRepo: dotacionRepo,
+		planifRepo: planifRepo,
+		dotRepo:    dotRepo,
 	}
 }
 
@@ -47,5 +47,5 @@ func (h *UpdateDotacionHandler) Handle(ctx context.Context, cmd UpdateDotacionCo
 		}
 	}
 
-	return h.dotacionRepo.SaveDotacion(ctx, items)
+	return h.dotRepo.SaveDotacion(ctx, items)
 }

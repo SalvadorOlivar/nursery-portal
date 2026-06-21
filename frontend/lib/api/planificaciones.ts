@@ -40,6 +40,9 @@ export const planificacionesApi = {
   getSectores: (id: string) =>
     api.get<{ data: SectorItem[] }>(`/planificaciones/${id}/sectores`),
 
+  getLeaves: (id: string) =>
+    api.get<{ data: import('@/types/ausencia').LeaveRequest[] }>(`/planificaciones/${id}/leaves`),
+
   updateSectores: (id: string, payload: UpdateSectoresPayload) =>
     api.put<void>(`/planificaciones/${id}/sectores`, payload),
 

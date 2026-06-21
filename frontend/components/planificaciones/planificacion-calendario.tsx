@@ -44,7 +44,6 @@ export function PlanificacionCalendario({ planificacionId }: CalendarioProps) {
   const planificacion: PlanificacionDetail = planifData
   const employees = planificacion.employees ?? []
   const activeEmployees = employees.filter((e) => e.activo)
-  const dias = planificacion.dias
   const canEdit = meData?.user.role === 'ADMIN' || meData?.user.role === 'SUPERVISOR'
   const readonly = !canEdit || planificacion.estado !== 'BORRADOR'
 
@@ -77,7 +76,7 @@ export function PlanificacionCalendario({ planificacionId }: CalendarioProps) {
                planificacion.estado === 'PUBLICADO' ? 'Publicado' : 'Cerrado'}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              {activeEmployees.length} empleados activos · {dias} días
+              {activeEmployees.length} empleados activos · 7 días
             </span>
           </div>
         </div>

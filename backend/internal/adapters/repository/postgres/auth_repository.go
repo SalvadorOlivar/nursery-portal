@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -121,7 +122,7 @@ func scanAuthUser(s scanner) (*auth.User, error) {
 	)
 	if err := s.Scan(&id, &username, &passwordHash, &role, &employeeID, &mustChangePassword, &createdAt, &updatedAt); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, errors.New("auth user not found")
+			return nil, fmt.Errorf("auth user not found: %w", err)
 		}
 		return nil, err
 	}

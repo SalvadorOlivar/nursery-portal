@@ -30,7 +30,7 @@ type Turno struct {
 	ID              string
 	PlanificacionID string
 	EmpleadoID      string
-	Dia             int
+	DiaSemana       int
 	Tipo            TipoTurno
 	Sector          string
 	CreatedAt       time.Time
@@ -40,7 +40,7 @@ type Turno struct {
 type NewTurnoParams struct {
 	PlanificacionID string
 	EmpleadoID      string
-	Dia             int
+	DiaSemana       int
 	Tipo            TipoTurno
 	Sector          string
 }
@@ -52,8 +52,8 @@ func NewTurno(params NewTurnoParams) (*Turno, error) {
 	if params.EmpleadoID == "" {
 		return nil, fmt.Errorf("empleado id is required")
 	}
-	if params.Dia < 1 || params.Dia > 31 {
-		return nil, fmt.Errorf("dia must be between 1 and 31")
+	if params.DiaSemana < 1 || params.DiaSemana > 7 {
+		return nil, fmt.Errorf("dia_semana must be between 1 and 7")
 	}
 	if !params.Tipo.IsValid() {
 		return nil, fmt.Errorf("invalid turno type: %s", params.Tipo)
@@ -64,7 +64,7 @@ func NewTurno(params NewTurnoParams) (*Turno, error) {
 		ID:              uuid.New().String(),
 		PlanificacionID: params.PlanificacionID,
 		EmpleadoID:      params.EmpleadoID,
-		Dia:             params.Dia,
+		DiaSemana:       params.DiaSemana,
 		Tipo:            params.Tipo,
 		Sector:          params.Sector,
 		CreatedAt:       now,

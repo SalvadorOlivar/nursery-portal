@@ -7,7 +7,7 @@ import (
 	"github.com/tuusuario/nursery-portal/internal/domain/auth"
 )
 
-func NewRouter(authHandler *AuthHandler, authMiddleware *AuthMiddleware, employeeHandler *EmployeeHandler, planificacionHandler *PlanificacionHandler) *chi.Mux {
+func NewRouter(authHandler *AuthHandler, authMiddleware *AuthMiddleware, employeeHandler *EmployeeHandler, planificacionHandler *PlanificacionHandler, ausenciaHandler *AusenciaHandler, intercambioHandler *IntercambioHandler) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
@@ -37,9 +37,33 @@ func NewRouter(authHandler *AuthHandler, authMiddleware *AuthMiddleware, employe
 			r.With(authMiddleware.RequireRoles(auth.RoleAdmin)).Post("/", employeeHandler.Create)
 			r.With(authMiddleware.RequireRoles(auth.RoleAdmin, auth.RoleSupervisor)).Get("/", employeeHandler.List)
 			r.Route("/{id}", func(r chi.Router) {
-				r.With(authMiddleware.RequireRoles(auth.RoleAdmin, auth.RoleSupervisor)).Get("/", employeeHandler.GetByID)
+				r.With(authMiddleware.RequireRoles(auth.RoleAdmin, auth.RoleSupervisor, auth.RoleEmployee)).Get("/", employeeHandler.GetByID)
 				r.With(authMiddleware.RequireRoles(auth.RoleAdmin)).Put("/", employeeHandler.Update)
 				r.With(authMiddleware.RequireRoles(auth.RoleAdmin)).Delete("/", employeeHandler.Deactivate)
+			})
+		})
+
+		r.Route("/leave-requests", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAuth)
+			r.Post("/", ausenciaHandler.CreateLeaveRequest)
+			r.Get("/", ausenciaHandler.ListLeaveRequests)
+			r.Route("/{id}", func(r chi.Router) {
+				r.Get("/", ausenciaHandler.GetLeaveRequest)
+				r.With(authMiddleware.RequireRoles(auth.RoleAdmin, auth.RoleSupervisor)).Post("/approve", ausenciaHandler.ApproveLeaveRequest)
+				r.With(authMiddleware.RequireRoles(auth.RoleAdmin, auth.RoleSupervisor)).Post("/reject", ausenciaHandler.RejectLeaveRequest)
+			})
+		})
+
+		r.Route("/employees/{employeeId}/compensatory-days", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAuth)
+			r.Get("/", ausenciaHandler.ListCompensatoryDays)
+		})
+
+		r.Route("/compensatory-days", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAuth)
+			r.With(authMiddleware.RequireRoles(auth.RoleAdmin, auth.RoleSupervisor)).Post("/", ausenciaHandler.CreateCompensatoryDay)
+			r.Route("/{id}", func(r chi.Router) {
+				r.With(authMiddleware.RequireRoles(auth.RoleAdmin, auth.RoleSupervisor)).Post("/use", ausenciaHandler.UseCompensatoryDay)
 			})
 		})
 
@@ -56,9 +80,24 @@ func NewRouter(authHandler *AuthHandler, authMiddleware *AuthMiddleware, employe
 				r.With(authMiddleware.RequireRoles(auth.RoleAdmin, auth.RoleSupervisor)).Post("/turnos", planificacionHandler.CreateTurno)
 				r.With(authMiddleware.RequireRoles(auth.RoleAdmin, auth.RoleSupervisor)).Delete("/turnos/{turnoId}", planificacionHandler.DeleteTurno)
 				r.Get("/requirements", planificacionHandler.GetStaffingRequirements)
+			r.Get("/leaves", planificacionHandler.GetPlanLeaves)
 				r.Get("/sectores", planificacionHandler.GetSectores)
 				r.With(authMiddleware.RequireRoles(auth.RoleAdmin, auth.RoleSupervisor)).Put("/sectores", planificacionHandler.UpdateSectores)
 				r.With(authMiddleware.RequireRoles(auth.RoleAdmin, auth.RoleSupervisor)).Put("/dotacion", planificacionHandler.UpdateDotacion)
+			})
+		})
+
+		r.Route("/swap-requests", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAuth)
+			r.Post("/", intercambioHandler.CreateSwapRequest)
+			r.Get("/", intercambioHandler.ListSwapRequests)
+			r.Route("/{id}", func(r chi.Router) {
+				r.Get("/", intercambioHandler.GetSwapRequest)
+				r.Post("/accept", intercambioHandler.AcceptSwapRequest)
+				r.Post("/reject", intercambioHandler.RejectSwapRequest)
+				r.With(authMiddleware.RequireRoles(auth.RoleAdmin, auth.RoleSupervisor)).Post("/approve", intercambioHandler.ApproveSwapRequest)
+				r.Post("/cancel", intercambioHandler.CancelSwapRequest)
+				r.Get("/history", intercambioHandler.GetSwapHistory)
 			})
 		})
 	})

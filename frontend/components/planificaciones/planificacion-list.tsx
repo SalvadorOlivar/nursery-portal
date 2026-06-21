@@ -17,11 +17,6 @@ import { toast } from 'sonner'
 import type { Planificacion } from '@/types/planificacion'
 import { useMe } from '@/features/auth/hooks/use-auth'
 
-const monthNames = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-]
-
 const estadoColors: Record<string, 'default' | 'secondary' | 'outline'> = {
   BORRADOR: 'secondary',
   PUBLICADO: 'default',
@@ -50,7 +45,7 @@ function PlanificacionRow({ planificacion, canEdit }: { planificacion: Planifica
   return (
     <TableRow>
       <TableCell className="font-medium">{planificacion.nombre}</TableCell>
-      <TableCell>{monthNames[planificacion.mes - 1]} {planificacion.anio}</TableCell>
+      <TableCell>Semana {planificacion.semana} de {planificacion.anio}</TableCell>
       <TableCell>{planificacion.dias} días</TableCell>
       <TableCell>
         <Badge variant={estadoColors[planificacion.estado] ?? 'secondary'}>

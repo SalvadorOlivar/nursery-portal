@@ -2,10 +2,16 @@
 
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { usePlanificacion, useSectores, useCreateTurno, useDeleteTurno } from '@/features/planificaciones/hooks/use-planificaciones'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select'
+import { usePlanificacion, useSectores, useCreateTurno, useDeleteTurno, usePlanLeaves } from '@/features/planificaciones/hooks/use-planificaciones'
 import type { Turno, TipoTurno } from '@/types/planificacion'
 import type { Employee } from '@/types/employee'
+import type { LeaveRequest } from '@/types/ausencia'
 
 const tipoLabels: Record<string, string> = {
   SUPERVISOR: 'Supervisor/a',
@@ -40,6 +46,31 @@ const turnosOrden: TipoTurno[] = ['MANANA', 'TARDE', 'VESPERTINO', 'NOCHE']
 const emptyTurnos: Turno[] = []
 const emptyEmployees: Employee[] = []
 const emptySectores: { id: string; nombre: string }[] = []
+const emptyLeaves: LeaveRequest[] = []
+
+const leaveTypeLabels: Record<string, string> = {
+  VACACIONES: 'Vac',
+  ENFERMEDAD: 'Lic',
+  PERSONAL: 'Pers',
+  DIA_FAVOR: 'Día F',
+}
+
+const diaLabels: Record<number, string> = {
+  1: 'Lunes',
+  2: 'Martes',
+  3: 'Miércoles',
+  4: 'Jueves',
+  5: 'Viernes',
+  6: 'Sábado',
+  7: 'Domingo',
+}
+
+function isoWeekToDate(anio: number, semana: number, diaSemana: number): Date {
+  const jan4 = new Date(anio, 0, 4)
+  const daysSinceMonday = jan4.getDay() === 0 ? 6 : jan4.getDay() - 1
+  const mondayWeek1 = new Date(anio, 0, 4 - daysSinceMonday)
+  return new Date(anio, 0, mondayWeek1.getDate() + (semana - 1) * 7 + (diaSemana - 1))
+}
 
 interface PlanillaDiariaProps {
   planificacionId: string
@@ -90,6 +121,7 @@ function EmployeeSelector({
 export function PlanillaDiaria({ planificacionId, readonly }: PlanillaDiariaProps) {
   const { data: planifData } = usePlanificacion(planificacionId)
   const { data: sectoresData } = useSectores(planificacionId)
+  const { data: leavesData } = usePlanLeaves(planificacionId)
   const createTurnoMutation = useCreateTurno()
   const deleteTurnoMutation = useDeleteTurno()
 
@@ -100,8 +132,27 @@ export function PlanillaDiaria({ planificacionId, readonly }: PlanillaDiariaProp
   const activeEmployees = employees.filter((e) => e.activo)
   const turnos = planifData?.turnos ?? emptyTurnos
 
+  const planif = planifData
+
+  const leaves = leavesData?.data ?? emptyLeaves
+  const empleadosConLicencia = useMemo(() => {
+    const set = new Set<string>()
+    if (!planif) return set
+    for (const lr of leaves) {
+      const fechaDia = isoWeekToDate(planif.anio, planif.semana, dia)
+      const inicioParts = lr.fecha_inicio.split('-').map(Number)
+      const finParts = lr.fecha_fin.split('-').map(Number)
+      const fechaInicio = new Date(inicioParts[0], inicioParts[1] - 1, inicioParts[2])
+      const fechaFin = new Date(finParts[0], finParts[1] - 1, finParts[2])
+      if (lr.estado === 'APROBADO' && fechaDia >= fechaInicio && fechaDia <= fechaFin) {
+        set.add(lr.employee_id)
+      }
+    }
+    return set
+  }, [leaves, dia, planif])
+
   const turnosDelDia = useMemo(() => {
-    return turnos.filter((t) => t.dia === dia)
+    return turnos.filter((t) => t.dia_semana === dia)
   }, [turnos, dia])
 
   const empleadosAsignadosPorTipo = useMemo(() => {
@@ -172,9 +223,6 @@ export function PlanillaDiaria({ planificacionId, readonly }: PlanillaDiariaProp
 
   const tiposPorSector = ['NURSE', 'NURSE_ASSISTANT']
 
-  const planif = planifData
-  const dias = planif?.dias ?? 30
-
   const handleEmployeeClick = useCallback(async (turno: Turno) => {
     if (readonly) return
     await deleteTurnoMutation.mutateAsync({
@@ -188,13 +236,15 @@ export function PlanillaDiaria({ planificacionId, readonly }: PlanillaDiariaProp
     if (readonly) return
     await createTurnoMutation.mutateAsync({
       planificacionId,
-      payload: { empleado_id: empleadoId, dia, tipo: turno as TipoTurno, sector },
+      payload: { empleado_id: empleadoId, dia_semana: dia, tipo: turno as TipoTurno, sector },
     })
   }, [dia, planificacionId, readonly, createTurnoMutation])
 
   const getAvailableEmployees = useCallback((_sector: string, tipo: string, turno: string) => {
-    return (employeesByTipo[tipo] ?? []).filter((e) => !empleadosAsignadosPorTipo.has(`${e.id}|${turno}`))
-  }, [employeesByTipo, empleadosAsignadosPorTipo])
+    return (employeesByTipo[tipo] ?? []).filter(
+      (e) => !empleadosAsignadosPorTipo.has(`${e.id}|${turno}`) && !empleadosConLicencia.has(e.id)
+    )
+  }, [employeesByTipo, empleadosAsignadosPorTipo, empleadosConLicencia])
 
   const isLoading = createTurnoMutation.isPending || deleteTurnoMutation.isPending
 
@@ -262,38 +312,36 @@ export function PlanillaDiaria({ planificacionId, readonly }: PlanillaDiariaProp
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <span className="text-sm font-medium">Día:</span>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDia((d) => Math.max(1, d - 1))}
-            disabled={dia <= 1}
-          >
-            &larr;
-          </Button>
-          <Input
-            type="number"
-            min={1}
-            max={dias}
-            value={dia}
-            onChange={(e) => {
-              const v = Number(e.target.value)
-              if (v >= 1 && v <= dias) setDia(v)
-            }}
-            className="w-16 h-8 text-center"
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDia((d) => Math.min(dias, d + 1))}
-            disabled={dia >= dias}
-          >
-            &rarr;
-          </Button>
-        </div>
-        <span className="text-xs text-muted-foreground">de {dias} días</span>
+        <span className="text-sm font-medium whitespace-nowrap">Día:</span>
+        <Select value={String(dia)} onValueChange={(v) => { if (v) setDia(Number(v)) }}>
+          <SelectTrigger className="w-48">
+            <span className="flex-1 text-left">{diaLabels[dia] ?? 'Seleccionar día'}</span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">Lunes</SelectItem>
+            <SelectItem value="2">Martes</SelectItem>
+            <SelectItem value="3">Miércoles</SelectItem>
+            <SelectItem value="4">Jueves</SelectItem>
+            <SelectItem value="5">Viernes</SelectItem>
+            <SelectItem value="6">Sábado</SelectItem>
+            <SelectItem value="7">Domingo</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
+      {empleadosConLicencia.size > 0 && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-red-50 border border-red-200 rounded-md px-3 py-2">
+          <span className="font-medium text-red-700">Empleados con licencia este día:</span>
+          {Array.from(empleadosConLicencia).map((empId) => {
+            const emp = activeEmployees.find((e) => e.id === empId)
+            return emp ? (
+              <span key={empId} className="inline-flex items-center gap-1 bg-red-100 text-red-800 px-2 py-0.5 rounded">
+                {emp.apellido}, {emp.nombre}
+              </span>
+            ) : null
+          })}
+        </div>
+      )}
 
       <div className="overflow-x-auto pb-4">
         <table className="w-full text-sm border-collapse">

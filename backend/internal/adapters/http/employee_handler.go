@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	cmd "github.com/tuusuario/nursery-portal/internal/application/commands/employee"
 	"github.com/tuusuario/nursery-portal/internal/application/services"
+	"github.com/tuusuario/nursery-portal/internal/domain/auth"
 	"github.com/tuusuario/nursery-portal/internal/domain/employee"
 )
 
@@ -71,6 +72,15 @@ func (h *EmployeeHandler) List(w http.ResponseWriter, r *http.Request) {
 
 func (h *EmployeeHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+
+	user, ok := authUserFromContext(r.Context())
+	if ok && user.Role == auth.RoleEmployee {
+		if user.EmployeeID == nil || *user.EmployeeID != id {
+			writeError(w, http.StatusForbidden, "forbidden")
+			return
+		}
+	}
+
 	emp, err := h.svc.GetByID(r.Context(), id)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "employee not found")
@@ -160,12 +170,4 @@ func toResponse(e *employee.Employee) employeeResponse {
 	}
 }
 
-func writeJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
-}
 
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, map[string]string{"error": message})
-}

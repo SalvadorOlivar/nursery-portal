@@ -131,10 +131,7 @@ func (r *DotacionRepository) SaveDotacion(ctx context.Context, items []*planific
 }
 
 func (r *DotacionRepository) DeleteByPlanificacion(ctx context.Context, planificacionID string) error {
-	if _, err := r.pool.Exec(ctx, `DELETE FROM planificacion_dotacion WHERE planificacion_id = $1`, planificacionID); err != nil {
-		return err
-	}
-	_, err := r.pool.Exec(ctx, `DELETE FROM planificacion_sectores WHERE planificacion_id = $1`, planificacionID)
+	_, err := r.pool.Exec(ctx, `DELETE FROM planificacion_dotacion WHERE planificacion_id = $1`, planificacionID)
 	return err
 }
 

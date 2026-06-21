@@ -6,7 +6,7 @@ export type TipoTurno = 'MANANA' | 'TARDE' | 'VESPERTINO' | 'NOCHE'
 
 export interface Planificacion {
   id: string
-  mes: number
+  semana: number
   anio: number
   nombre: string
   estado: EstadoPlanificacion
@@ -19,7 +19,7 @@ export interface Turno {
   id: string
   planificacion_id: string
   empleado_id: string
-  dia: number
+  dia_semana: number
   tipo: TipoTurno
   sector: string
   created_at: string
@@ -32,14 +32,14 @@ export interface PlanificacionDetail extends Planificacion {
 }
 
 export interface CreatePlanificacionPayload {
-  mes: number
+  semana: number
   anio: number
   nombre: string
 }
 
 export interface CreateTurnoPayload {
   empleado_id: string
-  dia: number
+  dia_semana: number
   tipo: TipoTurno
   sector: string
 }

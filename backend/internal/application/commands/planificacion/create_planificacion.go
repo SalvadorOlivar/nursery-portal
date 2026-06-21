@@ -10,26 +10,28 @@ import (
 )
 
 type CreatePlanificacionCommand struct {
-	Mes    int
+	Semana int
 	Anio   int
 	Nombre string
 }
 
 type CreatePlanificacionHandler struct {
-	repo         ports.PlanificacionRepository
-	dotacionRepo ports.DotacionRepository
+	repo       ports.PlanificacionRepository
+	sectorRepo ports.SectorRepository
+	dotRepo    ports.DotacionRepository
 }
 
-func NewCreatePlanificacionHandler(repo ports.PlanificacionRepository, dotacionRepo ports.DotacionRepository) *CreatePlanificacionHandler {
+func NewCreatePlanificacionHandler(repo ports.PlanificacionRepository, sectorRepo ports.SectorRepository, dotRepo ports.DotacionRepository) *CreatePlanificacionHandler {
 	return &CreatePlanificacionHandler{
-		repo:         repo,
-		dotacionRepo: dotacionRepo,
+		repo:       repo,
+		sectorRepo: sectorRepo,
+		dotRepo:    dotRepo,
 	}
 }
 
 func (h *CreatePlanificacionHandler) Handle(ctx context.Context, cmd CreatePlanificacionCommand) (*planificacion.Planificacion, error) {
 	p, err := planificacion.NewPlanificacion(planificacion.NewPlanificacionParams{
-		Mes:    cmd.Mes,
+		Semana: cmd.Semana,
 		Anio:   cmd.Anio,
 		Nombre: cmd.Nombre,
 	})
@@ -40,23 +42,20 @@ func (h *CreatePlanificacionHandler) Handle(ctx context.Context, cmd CreatePlani
 		return nil, err
 	}
 
-	if err := h.seedDefaultDotacion(ctx, p.ID, cmd.Mes); err != nil {
+	if err := h.seedDefaultDotacion(ctx, p.ID); err != nil {
 		return nil, err
 	}
 
 	return p, nil
 }
 
-func defaultSectoresForMonth(mes int) []string {
-	if mes == 6 || mes == 7 || mes == 8 {
-		return []string{"1-8", "9-14", "15-20"}
-	}
+func defaultSectores() []string {
 	return []string{"1-8", "9-14"}
 }
 
-func (h *CreatePlanificacionHandler) seedDefaultDotacion(ctx context.Context, planificacionID string, mes int) error {
-	defaultSectores := defaultSectoresForMonth(mes)
-	if err := h.dotacionRepo.SaveSectores(ctx, planificacionID, defaultSectores); err != nil {
+func (h *CreatePlanificacionHandler) seedDefaultDotacion(ctx context.Context, planificacionID string) error {
+	defaultSectores := defaultSectores()
+	if err := h.sectorRepo.SaveSectores(ctx, planificacionID, defaultSectores); err != nil {
 		return err
 	}
 
@@ -101,5 +100,5 @@ func (h *CreatePlanificacionHandler) seedDefaultDotacion(ctx context.Context, pl
 		}
 	}
 
-	return h.dotacionRepo.SaveDotacion(ctx, items)
+	return h.dotRepo.SaveDotacion(ctx, items)
 }

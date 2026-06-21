@@ -58,10 +58,19 @@ func main() {
 	planifRepo := postgres.NewPlanificacionRepository(pool)
 	turnoRepo := postgres.NewTurnoRepository(pool)
 	dotacionRepo := postgres.NewDotacionRepository(pool)
-	planifSvc := services.NewPlanificacionService(planifRepo, turnoRepo, dotacionRepo)
+	leaveRepo := postgres.NewLeaveRequestRepository(pool)
+	compRepo := postgres.NewCompensatoryDayRepository(pool)
+	planifSvc := services.NewPlanificacionService(planifRepo, turnoRepo, dotacionRepo, dotacionRepo, employeeRepo, leaveRepo, compRepo)
 	planifHandler := nurseryhttp.NewPlanificacionHandler(planifSvc, employeeSvc)
 
-	router := nurseryhttp.NewRouter(authHandler, authMiddleware, employeeHandler, planifHandler)
+	ausenciaSvc := services.NewAusenciaService(leaveRepo, compRepo)
+	ausenciaHandler := nurseryhttp.NewAusenciaHandler(ausenciaSvc)
+
+	intercambioRepo := postgres.NewIntercambioRepository(pool)
+	intercambioSvc := services.NewIntercambioService(intercambioRepo, turnoRepo)
+	intercambioHandler := nurseryhttp.NewIntercambioHandler(intercambioSvc)
+
+	router := nurseryhttp.NewRouter(authHandler, authMiddleware, employeeHandler, planifHandler, ausenciaHandler, intercambioHandler)
 
 	server := &http.Server{
 		Addr:         ":" + port,

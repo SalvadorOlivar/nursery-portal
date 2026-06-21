@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -59,7 +60,7 @@ func (r *EmployeeRepository) FindByID(ctx context.Context, id string) (*employee
 	e, err := scanEmployee(row)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, errors.New("employee not found")
+			return nil, fmt.Errorf("employee not found: %w", err)
 		}
 		return nil, err
 	}

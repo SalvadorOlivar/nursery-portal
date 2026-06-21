@@ -33,7 +33,7 @@ func NewGetPlanificacionHandler(planifRepo ports.PlanificacionRepository, turnoR
 func (h *GetPlanificacionHandler) Handle(ctx context.Context, qry GetPlanificacionQuery) (*PlanificacionConTurnos, error) {
 	p, err := h.planifRepo.FindByID(ctx, qry.ID)
 	if err != nil {
-		return nil, fmt.Errorf("planificacion not found")
+		return nil, fmt.Errorf("planificacion not found: %w", err)
 	}
 
 	turnos, err := h.turnoRepo.FindByPlanificacion(ctx, qry.ID)
