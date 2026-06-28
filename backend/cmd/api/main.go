@@ -67,7 +67,7 @@ func main() {
 	ausenciaHandler := nursehttp.NewAusenciaHandler(ausenciaSvc)
 
 	intercambioRepo := postgres.NewIntercambioRepository(pool)
-	intercambioSvc := services.NewIntercambioService(intercambioRepo, turnoRepo)
+	intercambioSvc := services.NewIntercambioService(intercambioRepo, turnoRepo, planifRepo, leaveRepo)
 	intercambioHandler := nursehttp.NewIntercambioHandler(intercambioSvc)
 
 	router := nursehttp.NewRouter(authHandler, authMiddleware, employeeHandler, planifHandler, ausenciaHandler, intercambioHandler)

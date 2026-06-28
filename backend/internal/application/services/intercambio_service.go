@@ -10,8 +10,10 @@ import (
 )
 
 type IntercambioService struct {
-	swapRepo  ports.ShiftSwapRequestRepository
-	turnoRepo ports.TurnoRepository
+	swapRepo   ports.ShiftSwapRequestRepository
+	turnoRepo  ports.TurnoRepository
+	planifRepo ports.PlanificacionRepository
+	leaveRepo  ports.LeaveRequestRepository
 
 	createHandler  *cmdinter.CreateSwapRequestHandler
 	acceptHandler  *cmdinter.AcceptSwapRequestHandler
@@ -25,14 +27,18 @@ type IntercambioService struct {
 func NewIntercambioService(
 	swapRepo ports.ShiftSwapRequestRepository,
 	turnoRepo ports.TurnoRepository,
+	planifRepo ports.PlanificacionRepository,
+	leaveRepo ports.LeaveRequestRepository,
 ) *IntercambioService {
 	return &IntercambioService{
 		swapRepo:       swapRepo,
 		turnoRepo:      turnoRepo,
-		createHandler:  cmdinter.NewCreateSwapRequestHandler(swapRepo, turnoRepo),
+		planifRepo:     planifRepo,
+		leaveRepo:      leaveRepo,
+		createHandler:  cmdinter.NewCreateSwapRequestHandler(swapRepo, turnoRepo, planifRepo, leaveRepo),
 		acceptHandler:  cmdinter.NewAcceptSwapRequestHandler(swapRepo),
 		rejectHandler:  cmdinter.NewRejectSwapRequestHandler(swapRepo),
-		approveHandler: cmdinter.NewApproveSwapRequestHandler(swapRepo, turnoRepo),
+		approveHandler: cmdinter.NewApproveSwapRequestHandler(swapRepo, turnoRepo, planifRepo, leaveRepo),
 		cancelHandler:  cmdinter.NewCancelSwapRequestHandler(swapRepo),
 		listHandler:    qryinter.NewListSwapRequestsHandler(swapRepo),
 		historyHandler: qryinter.NewGetSwapRequestHistoryHandler(swapRepo),
@@ -43,20 +49,20 @@ func (s *IntercambioService) CreateSwapRequest(ctx context.Context, cmd cmdinter
 	return s.createHandler.Handle(ctx, cmd)
 }
 
-func (s *IntercambioService) AcceptSwapRequest(ctx context.Context, id, actorID string) error {
-	return s.acceptHandler.Handle(ctx, cmdinter.AcceptSwapRequestCommand{ID: id, ActorID: actorID})
+func (s *IntercambioService) AcceptSwapRequest(ctx context.Context, id, actorID, employeeID string) error {
+	return s.acceptHandler.Handle(ctx, cmdinter.AcceptSwapRequestCommand{ID: id, ActorID: actorID, EmployeeID: employeeID})
 }
 
-func (s *IntercambioService) RejectSwapRequest(ctx context.Context, id, actorID string) error {
-	return s.rejectHandler.Handle(ctx, cmdinter.RejectSwapRequestCommand{ID: id, ActorID: actorID})
+func (s *IntercambioService) RejectSwapRequest(ctx context.Context, id, actorID, employeeID string) error {
+	return s.rejectHandler.Handle(ctx, cmdinter.RejectSwapRequestCommand{ID: id, ActorID: actorID, EmployeeID: employeeID})
 }
 
 func (s *IntercambioService) ApproveSwapRequest(ctx context.Context, id, actorID string) error {
 	return s.approveHandler.Handle(ctx, cmdinter.ApproveSwapRequestCommand{ID: id, ActorID: actorID})
 }
 
-func (s *IntercambioService) CancelSwapRequest(ctx context.Context, id, actorID string) error {
-	return s.cancelHandler.Handle(ctx, cmdinter.CancelSwapRequestCommand{ID: id, ActorID: actorID})
+func (s *IntercambioService) CancelSwapRequest(ctx context.Context, id, actorID, employeeID string) error {
+	return s.cancelHandler.Handle(ctx, cmdinter.CancelSwapRequestCommand{ID: id, ActorID: actorID, EmployeeID: employeeID})
 }
 
 func (s *IntercambioService) ListSwapRequests(ctx context.Context, employeeID, role string) ([]*intercambio.ShiftSwapRequest, error) {

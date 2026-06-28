@@ -9,8 +9,9 @@ import (
 )
 
 type CancelSwapRequestCommand struct {
-	ID      string
-	ActorID string
+	ID         string
+	ActorID    string
+	EmployeeID string
 }
 
 type CancelSwapRequestHandler struct {
@@ -24,11 +25,11 @@ func NewCancelSwapRequestHandler(repo ports.ShiftSwapRequestRepository) *CancelS
 func (h *CancelSwapRequestHandler) Handle(ctx context.Context, cmd CancelSwapRequestCommand) error {
 	req, err := h.repo.FindByID(ctx, cmd.ID)
 	if err != nil {
-		return fmt.Errorf("swap request not found: %w", err)
+		return fmt.Errorf("solicitud de intercambio no encontrada: %w", err)
 	}
 
-	if req.SolicitanteID != cmd.ActorID {
-		return fmt.Errorf("only the requesting employee can cancel this request")
+	if req.SolicitanteID != cmd.EmployeeID {
+		return fmt.Errorf("solo el empleado solicitante puede cancelar esta solicitud")
 	}
 
 	if err := req.Cancel(); err != nil {

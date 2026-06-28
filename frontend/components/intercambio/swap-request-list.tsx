@@ -9,10 +9,12 @@ import { useEmployees } from '@/features/employees/hooks/use-employees'
 import {
   useAcceptSwapRequest,
   useApproveSwapRequest,
+  useCancelSwapRequest,
   useRejectSwapRequest,
   useSwapRequests,
 } from '@/features/intercambio/hooks/use-intercambio'
 import type { ShiftSwapRequest } from '@/types/intercambio'
+import { ApiError } from '@/lib/api/client'
 
 const statusLabels: Record<string, string> = {
   PENDIENTE_RESPUESTA: 'Pendiente',
@@ -32,6 +34,7 @@ export function SwapRequestList() {
   const { data: meData } = useMe()
   const { data, isLoading, isError } = useSwapRequests()
   const { data: employeesData } = useEmployees()
+  const currentEmployeeId = meData?.user.employee_id
   const canApprove = meData?.user.role === 'ADMIN' || meData?.user.role === 'SUPERVISOR'
   const requests = data?.data ?? []
   const employees = employeesData?.data ?? []
@@ -78,7 +81,7 @@ export function SwapRequestList() {
             </Card>
           ) : (
             requests.map((request) => (
-              <SwapCard key={request.id} request={request} employees={employees} canApprove={canApprove} />
+              <SwapCard key={request.id} request={request} employees={employees} canApprove={canApprove} currentEmployeeId={currentEmployeeId} />
             ))
           )}
         </section>
@@ -110,28 +113,37 @@ function SwapCard({
   request,
   employees,
   canApprove,
+  currentEmployeeId,
 }: {
   request: ShiftSwapRequest
   employees: { id: string; nombre: string; apellido: string }[]
   canApprove: boolean
+  currentEmployeeId?: string
 }) {
   const acceptMutation = useAcceptSwapRequest()
   const approveMutation = useApproveSwapRequest()
   const rejectMutation = useRejectSwapRequest()
+  const cancelMutation = useCancelSwapRequest()
+  const isSolicitante = currentEmployeeId === request.solicitante_id
+  const isDestino = currentEmployeeId === request.destino_id
   const solicitante = employees.find((employee) => employee.id === request.solicitante_id)
   const destino = employees.find((employee) => employee.id === request.destino_id)
-  const isPending = request.estado === 'PENDIENTE_RESPUESTA' || request.estado === 'PENDIENTE_APROBACION'
+
+  async function handleAccept() {
+    try {
+      await acceptMutation.mutateAsync(request.id)
+      toast.success('Intercambio aceptado')
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : 'Error al aceptar intercambio')
+    }
+  }
 
   async function handleApprove() {
     try {
-      if (request.estado === 'PENDIENTE_APROBACION' && canApprove) {
-        await approveMutation.mutateAsync(request.id)
-      } else {
-        await acceptMutation.mutateAsync(request.id)
-      }
+      await approveMutation.mutateAsync(request.id)
       toast.success('Intercambio aprobado')
-    } catch {
-      toast.error('Error al aprobar intercambio')
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : 'Error al aprobar intercambio')
     }
   }
 
@@ -139,8 +151,17 @@ function SwapCard({
     try {
       await rejectMutation.mutateAsync(request.id)
       toast.success('Intercambio rechazado')
-    } catch {
-      toast.error('Error al rechazar intercambio')
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : 'Error al rechazar intercambio')
+    }
+  }
+
+  async function handleCancel() {
+    try {
+      await cancelMutation.mutateAsync(request.id)
+      toast.success('Intercambio cancelado')
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : 'Error al cancelar intercambio')
     }
   }
 
@@ -162,9 +183,9 @@ function SwapCard({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="np-badge">Origen {request.turno_solicitante_id.slice(0, 8)}</span>
+              <span className="np-badge">Turno origen</span>
               <ArrowRight className="size-4 text-[var(--muted-foreground)]" />
-              <span className="np-badge">Destino {request.turno_destino_id.slice(0, 8)}</span>
+              <span className="np-badge">Turno destino</span>
             </div>
 
             <div className="flex items-center gap-2 text-[0.8rem] text-[var(--muted-foreground)]">
@@ -175,17 +196,37 @@ function SwapCard({
 
           <div className="flex flex-col items-end gap-3">
             <StatusBadge tone={statusTone(request.estado)}>{statusLabels[request.estado] ?? request.estado}</StatusBadge>
-            {isPending && (
+            {request.estado === 'PENDIENTE_RESPUESTA' && isDestino && (
               <div className="flex gap-2">
-                <button type="button" className="np-btn np-btn-sm" onClick={handleApprove} disabled={acceptMutation.isPending || approveMutation.isPending}>
+                <button type="button" className="np-btn np-btn-sm" onClick={handleAccept} disabled={acceptMutation.isPending}>
                   <Check className="size-4 text-[var(--success)]" />
-                  <span className="np-action-text">Aprobar</span>
+                  <span className="np-action-text">Aceptar</span>
                 </button>
                 <button type="button" className="np-btn np-btn-sm" onClick={handleReject} disabled={rejectMutation.isPending}>
                   <X className="size-4 text-[var(--danger)]" />
                   <span className="np-action-text">Rechazar</span>
                 </button>
               </div>
+            )}
+            {request.estado === 'PENDIENTE_RESPUESTA' && isSolicitante && (
+              <button type="button" className="np-btn np-btn-sm" onClick={handleCancel} disabled={cancelMutation.isPending}>
+                <X className="size-4 text-[var(--muted-foreground)]" />
+                <span className="np-action-text">Cancelar</span>
+              </button>
+            )}
+            {request.estado === 'PENDIENTE_APROBACION' && canApprove && (
+              <div className="flex gap-2">
+                <button type="button" className="np-btn np-btn-sm" onClick={handleApprove} disabled={approveMutation.isPending}>
+                  <Check className="size-4 text-[var(--success)]" />
+                  <span className="np-action-text">Aprobar</span>
+                </button>
+              </div>
+            )}
+            {request.estado === 'PENDIENTE_APROBACION' && isSolicitante && (
+              <button type="button" className="np-btn np-btn-sm" onClick={handleCancel} disabled={cancelMutation.isPending}>
+                <X className="size-4 text-[var(--muted-foreground)]" />
+                <span className="np-action-text">Cancelar</span>
+              </button>
             )}
           </div>
         </div>

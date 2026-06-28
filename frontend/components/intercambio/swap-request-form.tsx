@@ -18,6 +18,7 @@ import { useEmployees } from '@/features/employees/hooks/use-employees'
 import { useMe } from '@/features/auth/hooks/use-auth'
 import { useCreateSwapRequest } from '@/features/intercambio/hooks/use-intercambio'
 import { toast } from 'sonner'
+import { ApiError } from '@/lib/api/client'
 
 const turnoLabels: Record<string, string> = {
   MANANA: 'Mañana',
@@ -80,8 +81,8 @@ export function SwapRequestForm() {
       })
       toast.success('Solicitud de intercambio creada')
       router.push('/intercambio')
-    } catch {
-      toast.error('Error al crear la solicitud')
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : 'Error al crear la solicitud')
     }
   }
 
@@ -102,9 +103,9 @@ export function SwapRequestForm() {
                 <SelectValue placeholder="Seleccionar planificación" />
               </SelectTrigger>
               <SelectContent>
-                {planificaciones.map((p) => (
+                  {planificaciones.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
-                    {p.nombre}
+                    Sem {p.semana} / {p.anio} — {p.nombre}
                   </SelectItem>
                 ))}
               </SelectContent>

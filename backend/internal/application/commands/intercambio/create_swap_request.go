@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/tuusuario/nurse-portal/internal/domain/intercambio"
+	"github.com/tuusuario/nurse-portal/internal/domain/planificacion"
 	"github.com/tuusuario/nurse-portal/internal/ports"
 )
 
@@ -18,32 +19,74 @@ type CreateSwapRequestCommand struct {
 }
 
 type CreateSwapRequestHandler struct {
-	repo      ports.ShiftSwapRequestRepository
-	turnoRepo ports.TurnoRepository
+	repo       ports.ShiftSwapRequestRepository
+	turnoRepo  ports.TurnoRepository
+	planifRepo ports.PlanificacionRepository
+	leaveRepo  ports.LeaveRequestRepository
 }
 
-func NewCreateSwapRequestHandler(repo ports.ShiftSwapRequestRepository, turnoRepo ports.TurnoRepository) *CreateSwapRequestHandler {
-	return &CreateSwapRequestHandler{repo: repo, turnoRepo: turnoRepo}
+func NewCreateSwapRequestHandler(
+	repo ports.ShiftSwapRequestRepository,
+	turnoRepo ports.TurnoRepository,
+	planifRepo ports.PlanificacionRepository,
+	leaveRepo ports.LeaveRequestRepository,
+) *CreateSwapRequestHandler {
+	return &CreateSwapRequestHandler{
+		repo:       repo,
+		turnoRepo:  turnoRepo,
+		planifRepo: planifRepo,
+		leaveRepo:  leaveRepo,
+	}
 }
 
 func (h *CreateSwapRequestHandler) Handle(ctx context.Context, cmd CreateSwapRequestCommand) (*intercambio.ShiftSwapRequest, error) {
 	turnoSol, err := h.turnoRepo.FindByTurnoID(ctx, cmd.TurnoSolicitanteID)
 	if err != nil {
-		return nil, fmt.Errorf("turno solicitante not found: %w", err)
+		return nil, fmt.Errorf("turno solicitante no encontrado: %w", err)
 	}
 	turnoDest, err := h.turnoRepo.FindByTurnoID(ctx, cmd.TurnoDestinoID)
 	if err != nil {
-		return nil, fmt.Errorf("turno destino not found: %w", err)
+		return nil, fmt.Errorf("turno destino no encontrado: %w", err)
 	}
 
 	if turnoSol.PlanificacionID != cmd.PlanificacionID || turnoDest.PlanificacionID != cmd.PlanificacionID {
-		return nil, fmt.Errorf("both shifts must belong to the same planificacion")
+		return nil, fmt.Errorf("ambos turnos deben pertenecer a la misma planificación")
 	}
 	if turnoSol.EmpleadoID != cmd.SolicitanteID {
-		return nil, fmt.Errorf("turno solicitante does not belong to the requesting employee")
+		return nil, fmt.Errorf("el turno solicitante no pertenece al empleado solicitante")
 	}
 	if turnoDest.EmpleadoID != cmd.DestinoID {
-		return nil, fmt.Errorf("turno destino does not belong to the target employee")
+		return nil, fmt.Errorf("el turno destino no pertenece al empleado destino")
+	}
+
+	p, err := h.planifRepo.FindByID(ctx, cmd.PlanificacionID)
+	if err != nil {
+		return nil, fmt.Errorf("planificación no encontrada: %w", err)
+	}
+
+	fechaTurnoSol := planificacion.TurnoDate(p.Semana, p.Anio, turnoSol.DiaSemana)
+	fechaTurnoDest := planificacion.TurnoDate(p.Semana, p.Anio, turnoDest.DiaSemana)
+
+	leavesSol, err := h.leaveRepo.FindApprovedByEmployeeAndDate(ctx, cmd.SolicitanteID, fechaTurnoSol)
+	if err != nil {
+		return nil, fmt.Errorf("error al verificar licencia del solicitante: %w", err)
+	}
+	if len(leavesSol) > 0 {
+		return nil, fmt.Errorf(
+			"el empleado solicitante tiene licencia aprobada el %s",
+			fechaTurnoSol.Format("2006-01-02"),
+		)
+	}
+
+	leavesDestByDate, err := h.leaveRepo.FindApprovedByEmployeeAndDate(ctx, cmd.DestinoID, fechaTurnoDest)
+	if err != nil {
+		return nil, fmt.Errorf("error al verificar licencia del destino: %w", err)
+	}
+	if len(leavesDestByDate) > 0 {
+		return nil, fmt.Errorf(
+			"el empleado destino tiene licencia aprobada el %s",
+			fechaTurnoDest.Format("2006-01-02"),
+		)
 	}
 
 	req, err := intercambio.NewShiftSwapRequest(intercambio.NewSwapRequestParams{

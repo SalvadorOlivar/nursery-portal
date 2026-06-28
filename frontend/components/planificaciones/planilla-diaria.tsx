@@ -46,14 +46,9 @@ const diaShortLabels: Record<number, string> = {
   1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb', 7: 'Dom',
 }
 
-const monthsEs = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+import { isoWeekToDate } from '@/lib/utils'
 
-function isoWeekToDate(anio: number, semana: number, diaSemana: number): Date {
-  const jan4 = new Date(anio, 0, 4)
-  const daysSinceMonday = jan4.getDay() === 0 ? 6 : jan4.getDay() - 1
-  const mondayWeek1 = new Date(anio, 0, 4 - daysSinceMonday)
-  return new Date(anio, 0, mondayWeek1.getDate() + (semana - 1) * 7 + (diaSemana - 1))
-}
+const monthsEs = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
 function initials(nombre?: string, apellido?: string): string {
   return ((nombre?.[0] ?? '') + (apellido?.[0] ?? '')).toUpperCase() || '??'

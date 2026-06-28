@@ -277,3 +277,16 @@ flowchart TB
   ports --> repos
   repos --> db
 ```
+
+## Notas de implementación
+
+### Planificaciones — Listado agrupado
+- `PlanificacionService.List()` auto-cierra (`PUBLICADO → CERRADO`) planificaciones cuya semana ya venció antes de retornar la lista.
+- El frontend (`planificacion-list.tsx`) clasifica las planificaciones en:
+  - **Actual**: la de la semana vigente con `estado === PUBLICADO` (destacada como card principal).
+  - **Próximas**: futuras dentro del próximo mes (collapsible, expandido por defecto).
+  - **Recientes**: pasadas del último mes (collapsible, expandido por defecto).
+  - **Anteriores**: el resto (collapsible, cerrado por defecto).
+- Cada sección agrupa por mes usando `getMonthFromWeek()` de `lib/utils.ts`.
+- `CollapsibleSection` (`components/ui/collapsible-section.tsx`) es un toggle reutilizable con icono chevron y contador.
+- `isoWeekToDate()`, `getWeekRange()`, `getMonthFromWeek()` residen en `lib/utils.ts` (extraídas de componentes duplicados).

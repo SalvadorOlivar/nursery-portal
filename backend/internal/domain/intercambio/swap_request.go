@@ -59,25 +59,25 @@ type NewSwapRequestParams struct {
 
 func NewShiftSwapRequest(params NewSwapRequestParams) (*ShiftSwapRequest, error) {
 	if params.PlanificacionID == "" {
-		return nil, fmt.Errorf("planificacion id is required")
+		return nil, fmt.Errorf("el id de planificación es requerido")
 	}
 	if params.TurnoSolicitanteID == "" {
-		return nil, fmt.Errorf("turno solicitante id is required")
+		return nil, fmt.Errorf("el id del turno solicitante es requerido")
 	}
 	if params.TurnoDestinoID == "" {
-		return nil, fmt.Errorf("turno destino id is required")
+		return nil, fmt.Errorf("el id del turno destino es requerido")
 	}
 	if params.SolicitanteID == "" {
-		return nil, fmt.Errorf("solicitante id is required")
+		return nil, fmt.Errorf("el id del solicitante es requerido")
 	}
 	if params.DestinoID == "" {
-		return nil, fmt.Errorf("destino id is required")
+		return nil, fmt.Errorf("el id del destino es requerido")
 	}
 	if params.SolicitanteID == params.DestinoID {
-		return nil, fmt.Errorf("cannot swap shifts with yourself")
+		return nil, fmt.Errorf("no puedes intercambiar turnos contigo mismo")
 	}
 	if params.TurnoSolicitanteID == params.TurnoDestinoID {
-		return nil, fmt.Errorf("cannot swap a shift with itself")
+		return nil, fmt.Errorf("no puedes intercambiar un turno consigo mismo")
 	}
 
 	now := time.Now().UTC()
@@ -96,7 +96,7 @@ func NewShiftSwapRequest(params NewSwapRequestParams) (*ShiftSwapRequest, error)
 
 func (s *ShiftSwapRequest) AcceptByDestino() error {
 	if s.Estado != SwapPendienteRespuesta {
-		return fmt.Errorf("only requests in PENDIENTE_RESPUESTA can be accepted")
+		return fmt.Errorf("solo solicitudes en estado PENDIENTE_RESPUESTA pueden ser aceptadas")
 	}
 	s.Estado = SwapPendienteAprobacion
 	s.UpdatedAt = time.Now().UTC()
@@ -105,7 +105,7 @@ func (s *ShiftSwapRequest) AcceptByDestino() error {
 
 func (s *ShiftSwapRequest) Reject() error {
 	if s.Estado != SwapPendienteRespuesta {
-		return fmt.Errorf("only requests in PENDIENTE_RESPUESTA can be rejected")
+		return fmt.Errorf("solo solicitudes en estado PENDIENTE_RESPUESTA pueden ser rechazadas")
 	}
 	s.Estado = SwapRechazado
 	s.UpdatedAt = time.Now().UTC()
@@ -114,7 +114,7 @@ func (s *ShiftSwapRequest) Reject() error {
 
 func (s *ShiftSwapRequest) Approve(approvedBy string) error {
 	if s.Estado != SwapPendienteAprobacion {
-		return fmt.Errorf("only requests in PENDIENTE_APROBACION can be approved")
+		return fmt.Errorf("solo solicitudes en estado PENDIENTE_APROBACION pueden ser aprobadas")
 	}
 	s.Estado = SwapAprobado
 	s.AprobadoPor = &approvedBy
@@ -124,7 +124,7 @@ func (s *ShiftSwapRequest) Approve(approvedBy string) error {
 
 func (s *ShiftSwapRequest) Cancel() error {
 	if s.Estado != SwapPendienteRespuesta && s.Estado != SwapPendienteAprobacion {
-		return fmt.Errorf("only pending requests can be cancelled")
+		return fmt.Errorf("solo se pueden cancelar solicitudes pendientes")
 	}
 	s.Estado = SwapCancelado
 	s.UpdatedAt = time.Now().UTC()

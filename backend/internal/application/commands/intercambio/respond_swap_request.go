@@ -9,13 +9,15 @@ import (
 )
 
 type AcceptSwapRequestCommand struct {
-	ID      string
-	ActorID string
+	ID         string
+	ActorID    string
+	EmployeeID string
 }
 
 type RejectSwapRequestCommand struct {
-	ID      string
-	ActorID string
+	ID         string
+	ActorID    string
+	EmployeeID string
 }
 
 type AcceptSwapRequestHandler struct {
@@ -29,11 +31,11 @@ func NewAcceptSwapRequestHandler(repo ports.ShiftSwapRequestRepository) *AcceptS
 func (h *AcceptSwapRequestHandler) Handle(ctx context.Context, cmd AcceptSwapRequestCommand) error {
 	req, err := h.repo.FindByID(ctx, cmd.ID)
 	if err != nil {
-		return fmt.Errorf("swap request not found: %w", err)
+		return fmt.Errorf("solicitud de intercambio no encontrada: %w", err)
 	}
 
-	if req.DestinoID != cmd.ActorID {
-		return fmt.Errorf("only the destination employee can accept this request")
+	if req.DestinoID != cmd.EmployeeID {
+		return fmt.Errorf("solo el empleado destino puede aceptar esta solicitud")
 	}
 
 	if err := req.AcceptByDestino(); err != nil {
@@ -59,11 +61,11 @@ func NewRejectSwapRequestHandler(repo ports.ShiftSwapRequestRepository) *RejectS
 func (h *RejectSwapRequestHandler) Handle(ctx context.Context, cmd RejectSwapRequestCommand) error {
 	req, err := h.repo.FindByID(ctx, cmd.ID)
 	if err != nil {
-		return fmt.Errorf("swap request not found: %w", err)
+		return fmt.Errorf("solicitud de intercambio no encontrada: %w", err)
 	}
 
-	if req.DestinoID != cmd.ActorID {
-		return fmt.Errorf("only the destination employee can reject this request")
+	if req.DestinoID != cmd.EmployeeID {
+		return fmt.Errorf("solo el empleado destino puede rechazar esta solicitud")
 	}
 
 	if err := req.Reject(); err != nil {

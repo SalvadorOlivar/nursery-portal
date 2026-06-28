@@ -86,7 +86,25 @@ func (s *PlanificacionService) Cerrar(ctx context.Context, id string) error {
 }
 
 func (s *PlanificacionService) List(ctx context.Context) ([]*planificacion.Planificacion, error) {
-	return s.planifRepo.FindAll(ctx)
+	plans, err := s.planifRepo.FindAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	for _, p := range plans {
+		if p.Estado == planificacion.EstadoPublicado {
+			sunday := isoWeekToDate(p.Anio, p.Semana, 7)
+			monday := sunday.AddDate(0, 0, 1)
+			if !monday.After(now) {
+				if cerrErr := p.Cerrar(); cerrErr == nil {
+					_ = s.planifRepo.Update(ctx, p)
+				}
+			}
+		}
+	}
+
+	return plans, nil
 }
 
 func (s *PlanificacionService) GetByID(ctx context.Context, id string) (*qryplanif.PlanificacionConTurnos, error) {

@@ -5,9 +5,10 @@
 ## Frontend (Next.js 16 / React / TypeScript)
 
 - `app/*/page.tsx` — App Router pages (13 rutas: planificaciones, employees, intercambio, leave-requests, sectores, dotacion, etc.)
-- `components/` — React components: `auth/AppShell`, `planificaciones/`, `employees/`, `ausencia/`, `intercambio/`, `ui/` (shadcn)
+- `components/` — React components: `auth/AppShell`, `planificaciones/`, `employees/`, `ausencia/`, `intercambio/`, `ui/` (shadcn + `collapsible-section.tsx`)
 - `features/*/hooks/` — React Query hooks (use-auth, use-planificaciones, use-employees, use-ausencia, use-intercambio)
 - `lib/api/` — Cliente HTTP + 5 módulos API (auth, employees, planificaciones, ausencia, intercambio)
+- `lib/utils.ts` — Funciones utilitarias: `cn()`, `isoWeekToDate()`, `getWeekRange()`, helpers de fecha
 - `types/` — Interfaces TypeScript
 
 ## Backend (Go, hexagonal + CQRS)

@@ -107,7 +107,7 @@ func (h *IntercambioHandler) AcceptSwapRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err := h.svc.AcceptSwapRequest(r.Context(), id, *user.EmployeeID); err != nil {
+	if err := h.svc.AcceptSwapRequest(r.Context(), id, user.ID, *user.EmployeeID); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -128,7 +128,7 @@ func (h *IntercambioHandler) RejectSwapRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err := h.svc.RejectSwapRequest(r.Context(), id, *user.EmployeeID); err != nil {
+	if err := h.svc.RejectSwapRequest(r.Context(), id, user.ID, *user.EmployeeID); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -165,7 +165,7 @@ func (h *IntercambioHandler) CancelSwapRequest(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err := h.svc.CancelSwapRequest(r.Context(), id, *user.EmployeeID); err != nil {
+	if err := h.svc.CancelSwapRequest(r.Context(), id, user.ID, *user.EmployeeID); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
